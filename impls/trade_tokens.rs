@@ -1,7 +1,8 @@
 pub use crate::traits::trade_tokens::*;
+pub use crate::traits::phalanx_tokens::*;
+
 pub use brush::contracts::psp22::*;
 use brush::{
-    declare_storage_trait,
     traits::{
         AccountId,
         Balance,
@@ -9,27 +10,14 @@ use brush::{
 };
 pub use ink_prelude::vec::Vec;
 
-use ink_storage::traits::SpreadLayout;
-
-#[cfg(feature = "std")]
-use ink_storage::traits::StorageLayout;
-
-#[derive(Default, Debug, SpreadLayout)]
-#[cfg_attr(feature = "std", derive(StorageLayout))]
-pub struct TradedPSP22Tokens {
-    pub base_token_account: AccountId,
-    pub quoted_token_account: AccountId,
-    pub phalanx_token_account: AccountId,
-}
-
-declare_storage_trait!(TradedPSP22TokensStorage, TradedPSP22Tokens);
 
 // TO DO
 // Authorize transfer
 // Add Fee
 // Add Phalanx reward to user
 
-impl<T: TradedPSP22TokensStorage + TradePSP22TokensBaseInternal> TradePSP22Tokens for T {
+    impl<T: PhalanxPSP22TokensStorage + PhalanxPSP22TokensBaseInternal> TradePSP22Tokens for T {
+
     fn trade_tokens(
         &mut self,
         bid_account: AccountId,
@@ -44,34 +32,3 @@ impl<T: TradedPSP22TokensStorage + TradePSP22TokensBaseInternal> TradePSP22Token
     }
 }
 
-pub trait TradePSP22TokensBaseInternal {
-    fn base(&self) -> &PSP22Ref;
-}
-
-impl<T: TradedPSP22TokensStorage> TradePSP22TokensBaseInternal for T {
-    fn base(&self) -> &PSP22Ref {
-        &TradedPSP22TokensStorage::get(self).base_token_account
-    }
-}
-
-pub trait TradePSP22TokensQuotedInternal {
-    fn quoted(&self) -> &PSP22Ref;
-}
-
-impl<T: TradedPSP22TokensStorage> TradePSP22TokensQuotedInternal for T {
-    fn quoted(&self) -> &PSP22Ref {
-        &TradedPSP22TokensStorage::get(self).quoted_token_account
-    }
-}
-
-pub trait TradePSP22TokensPhalanxInternal {
-    fn phalanx(&self) -> &PSP22Ref;
-}
-
-impl<T: TradedPSP22TokensStorage> TradePSP22TokensPhalanxInternal for T {
-    fn phalanx(&self) -> &PSP22Ref {
-        &TradedPSP22TokensStorage::get(self).phalanx_token_account
-    }
-}
-
-/////////////////////////////////////////////////:::

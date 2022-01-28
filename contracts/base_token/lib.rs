@@ -9,7 +9,8 @@ pub mod base_token {
     #[derive(Default, PSP22Storage)]
     pub struct Contract {
         #[PSP22StorageField]
-        psp22: PSP22Data,}
+        psp22: PSP22Data,
+    }
 
     impl PSP22 for Contract {}
 
@@ -23,6 +24,5 @@ pub mod base_token {
             assert!(instance._mint(Self::env().caller(), total_supply).is_ok());
             instance
         }
-
     }
 }

@@ -1,139 +1,156 @@
+pub use crate::traits::orders::OrdersStorage;
 pub use crate::traits::orders::*;
+pub use crate::traits::phalanx_tokens::*;
+
 pub use brush::contracts::psp22::*;
 use brush::{
-    declare_storage_trait,
     traits::{
         AccountId,
         Balance,
     },
 };
+// use core::cmp;
 pub use ink_prelude::vec::Vec;
 
-use ink_storage::traits::{
-    PackedLayout,
-    SpreadLayout,
-};
 
-#[cfg(feature = "std")]
-use ink_storage::traits::StorageLayout;
 
-#[derive(
-    Copy,
-    PartialEq,
-    //  Eq,
-    Debug,
-    Clone,
-    scale::Encode,
-    scale::Decode,
-    PackedLayout,
-    SpreadLayout,
-)]
-#[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
-struct OrderInternal {
-    acct: AccountId,
-    amount: Balance,
-}
-
-impl OrderInternal {
-    fn new(acct: AccountId, amount: Balance) -> Self {
-        OrderInternal { acct, amount }
-    }
-}
-
-#[derive(Default, Debug, SpreadLayout)]
-#[cfg_attr(feature = "std", derive(StorageLayout))]
-pub struct OrderStruct {
-    bids: Vec<OrderInternal>,
-    asks: Vec<OrderInternal>,
-    base_token_account: AccountId,
-}
-
-declare_storage_trait!(OrdersStorage, OrderStruct);
-
-impl<T: OrdersStorage + OrdersBaseInternal> Orders for T {
-    fn order(&mut self, side: Side, amount: Balance) -> Result<(), PSP22Error> {
+    impl<T: OrdersStorage + OrderStorageInternal + PhalanxPSP22TokensStorage + PhalanxPSP22TokensBaseInternal> Orders for T {
+        fn order(&mut self, side: Side, amount: Balance) -> Result<(), PSP22Error> {
         // Check Caller Account is valid?
         // If not, return an error?
         let acct = T::env().caller();
+        // Locate an existing order for this account in bids and asks queues (only 1 order per account)
+        // If order found, remove it. Will be replace by a the new order (can change side)
+        // Maybe reuse order_cancel or call common internal
+        match self._queue_account_get(acct) {
+            Some(queue_pointer) => {
+                self._queue_get_mut(queue_pointer.side).remove(queue_pointer.index);
+            }
+            None => {}
+        };
 
-        // // Locate an existing order for this account in bids and asks queues (only 1 order per account)
-        // // If order found, remove it. Will be replace by a the new order (can change side)
-        // match self._queue_account_get(acct) {
-        //     Some(queue_pointer) => {
-        //         match queue_pointer.side {
-        //             Side::Bid => {
-        //                 self.bids.remove(queue_pointer.index);
-        //             }
-        //             Side::Ask => {
-        //                 self.asks.remove(queue_pointer.index);
-        //             }
-        //         }
-        //     }
-        //     None => {}
-        // };
-
-        // // Now accunt has no order in queue. Add order
-        // let order = OrderInternal::new(acct, amount);
-        // match side {
-        //     Side::Bid => {
-        //         self.bids().push(order);
-        //     }
-        //     Side::Ask => {
-        //         self.asks().push(order);
-        //     }
-        // }
+        // Now accunt has no order in queue. Add order
+        let order = OrderInternal::new(acct, amount);
+        self._queue_get_mut(side).push(order);
 
         Ok(())
     }
 
-    // Internal function to find side and queue position of an account
+    fn order_get(&self, acct: AccountId) -> Option<Order> {
+        // Maybe better Result<Order> with error mgmt
+        match self._queue_account_get(acct) {
+            Some(qp) => {
+                // code below is to handle usize=>u32 conv err. Should return some error.
+                // But contract should not allow this to happen.
+                let i: u32 = qp.index.try_into().map_or(0, |i| i);
+                if i == 0 {
+                    return None
+                };
+
+                Some(Order::new(acct, self._queue_get(qp.side)[qp.index].amount, qp.side, i))
+            }
+            None => None,
+        }
+    }
+
+    fn order_cancel(&mut self, _acct: AccountId) {
+        let acct = T::env().caller();
+        // Locate an existing order for this account in bids and asks queues (only 1 order per account)
+        // If order found, remove it. Will be replace by a the new order (can change side)
+        match self._queue_account_get(acct) {
+            Some(queue_pointer) => {
+                self._queue_get_mut(queue_pointer.side).remove(queue_pointer.index);
+            }
+            None => {}
+        };
+    }
+
+    fn queue_get_length(&self, side: Side) -> u32 {
+        self._queue_get(side).len() as u32
+    }
+
+    fn queue_get_total_amount(&self, side: Side) -> Balance {
+        self._queue_get(side).iter().map(|x| x.amount).sum()
+    }
+
     fn _queue_account_get(&self, acct: AccountId) -> Option<QueuePointer> {
-        let mut o_queue_pointer = None;
-        // let o_acct_pos_bid = self.bids.iter().position(|&x| x.acct == acct);
-        // match o_acct_pos_bid {
-        //     Some(index) => {
-        //         o_queue_pointer = Some(QueuePointer::new(Side::Bid, index));
-        //     }
-        //     None => {
-        //         let o_acct_pos_ask = self.asks().iter().position(|&x| x.acct == acct);
-        //         match o_acct_pos_ask {
-        //             Some(index) => {
-        //                 o_queue_pointer = Some(QueuePointer::new(Side::Ask, index));
-        //             }
-        //             None => {}
-        //         }
-        //     }
-        // }
-        o_queue_pointer
+        // let o_acct_pos_bid = OrdersStorage::get(self).bids.iter().position(|&x| x.acct == acct);
+        let o_acct_pos_bid = self.bids().iter().position(|&x| x.acct == acct);
+        match o_acct_pos_bid {
+            Some(index) => Some(QueuePointer::new(Side::Bid, index)),
+            None => {
+                let o_acct_pos_ask = self.asks().iter().position(|&x| x.acct == acct);
+                match o_acct_pos_ask {
+                    Some(index) => Some(QueuePointer::new(Side::Ask, index)),
+                    None => None,
+                }
+            }
+        }
+    }
+
+    fn _queue_get_mut(&mut self, side: Side) -> &mut Vec<OrderInternal> {
+        match side {
+            Side::Bid => self.bids_mut(),
+            Side::Ask => self.asks_mut(),
+        }
+    }
+
+    fn _queue_get(&self, side: Side) -> &Vec<OrderInternal> {
+        match side {
+            Side::Bid => &self.bids(),
+            Side::Ask => &self.asks(),
+        }
+    }
+
+    fn _clear_orders_at_price(&mut self, price: Balance) {
+        // Repeat until 1 queue is empty
+        //  Take 1st orders in both queues
+        //  Create a transaction at price between the 2 accounts
+        //  Remove smallest order and reduce largest order accordingly (or remove both is same size)
+
+        // If any of the transactions fails?? (ex: lack of gas, network issues)
+        // Probably resolve anyways and clear the queue
+        // trade exec should be async in some ways. Not possible to wait for result else order book would be stuck
+
+        loop {
+            if self.bids().len() == 0 {
+                break
+            }
+            if self.asks().len() == 0 {
+                break
+            }
+
+            let trade_amount = core::cmp::min(
+                self.bids().first().unwrap().amount,
+                self.asks().first().unwrap().amount,
+            );
+
+            Self::_trigger_trade(
+                trade_amount,
+                price,
+                &self.bids().first().unwrap().acct,
+                &self.asks().first().unwrap().acct,
+            ); // Check for success?
+
+            if self.bids().first().unwrap().amount == trade_amount {
+                self.bids_mut().remove(0);
+            } else {
+                self.bids_mut().first_mut().unwrap().amount -= trade_amount;
+            };
+            if self.asks().first().unwrap().amount == trade_amount {
+                self.asks_mut().remove(0);
+            } else {
+                self.asks_mut().first_mut().unwrap().amount -= trade_amount;
+            };
+        }
+    }
+
+    fn _trigger_trade(base_amount: Balance, price: Balance, ask_acct: &AccountId, bid_acct: &AccountId) {
+        // Call the Trade Tokens contract
+        let _ba = base_amount;
+        let _p = price;
+        let _aa = ask_acct;
+        let _ba = bid_acct;
     }
 }
 
-// pub trait OrdersBidsInternal {
-//     fn bids(&self) -> &mut Vec<OrderInternal>;
-// }
-
-// impl<T: OrdersStorage> OrdersBidsInternal for T {
-//     fn bids(&self) -> &mut Vec<OrderInternal> {
-//         &OrdersStorage::get(self).bids
-//     }
-// }
-
-// pub trait OrdersAsksInternal {
-//     fn asks(&self) -> &Vec<OrderInternal>;
-// }
-
-// impl<T: OrdersStorage> OrdersAsksInternal for T {
-//     fn asks(&self) -> &Vec<OrderInternal> {
-//         &OrdersStorage::get(self).asks
-//     }
-// }
-
-pub trait OrdersBaseInternal {
-    fn base(&self) -> &PSP22Ref;
-}
-
-impl<T: OrdersStorage> OrdersBaseInternal for T {
-    fn base(&self) -> &PSP22Ref {
-        &OrdersStorage::get(self).base_token_account
-    }
-}

@@ -1,21 +1,19 @@
 pub use brush::contracts::traits::psp22::*;
-use brush::traits::{
-    AccountId,
-    Balance,
+use brush::{
+    declare_storage_trait,
+    traits::{
+        AccountId,
+        Balance,
+    },
 };
-use ink_storage::traits::SpreadLayout;
-
-#[derive(
-    Copy,
-    PartialEq,
-    // Eq,
-    Debug,
-    Clone,
-    scale::Encode,
-    scale::Decode,
-    // PackedLayout,
+use ink_prelude::vec::Vec;
+use ink_storage::traits::{
+    PackedLayout,
     SpreadLayout,
-)]
+};
+
+
+#[derive(Copy, PartialEq, Debug, Clone, scale::Encode, scale::Decode, PackedLayout, SpreadLayout)]
 #[cfg_attr(feature = "std", derive(scale_info::TypeInfo, ::ink_storage::traits::StorageLayout))]
 pub enum Side {
     Bid,
@@ -32,6 +30,76 @@ impl QueuePointer {
     }
 }
 
+#[derive(Copy, PartialEq, Debug, Clone, scale::Encode, scale::Decode, PackedLayout, SpreadLayout)]
+#[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
+pub struct Order {
+    pub acct: AccountId,
+    pub amount: Balance,
+    pub side: Side,
+    pub position: u32,
+}
+
+impl Order {
+    pub fn new(acct: AccountId, amount: Balance, side: Side, position: u32) -> Self {
+        Order {
+            acct,
+            amount,
+            side,
+            position,
+        }
+    }
+}
+
+#[derive(Copy, PartialEq, Debug, Clone, scale::Encode, scale::Decode, PackedLayout, SpreadLayout)]
+#[cfg_attr(feature = "std", derive(scale_info::TypeInfo))]
+pub struct OrderInternal {
+    pub acct: AccountId,
+    pub amount: Balance,
+}
+
+impl OrderInternal {
+    pub fn new(acct: AccountId, amount: Balance) -> Self {
+        OrderInternal { acct, amount }
+    }
+}
+
+
+#[cfg(feature = "std")]
+use ink_storage::traits::StorageLayout;
+
+#[derive(Default, Debug, SpreadLayout)]
+#[cfg_attr(feature = "std", derive(StorageLayout))]
+pub struct OrderStruct {
+    pub bids: Vec<OrderInternal>,
+    pub asks: Vec<OrderInternal>,
+    // base_token_account: AccountId,
+}
+
+declare_storage_trait!(OrdersStorage, OrderStruct);
+
+pub trait OrderStorageInternal {
+    fn bids(&self) -> &Vec<OrderInternal>;
+    fn asks(&self) -> &Vec<OrderInternal>;
+    fn bids_mut(&mut self) -> &mut Vec<OrderInternal>;
+    fn asks_mut(&mut self) -> &mut Vec<OrderInternal>;
+}
+
+impl<T: OrdersStorage> OrderStorageInternal for T {
+    fn bids(&self) -> &Vec<OrderInternal> {
+        &OrdersStorage::get(self).bids
+    }
+    fn asks(&self) -> &Vec<OrderInternal> {
+        &OrdersStorage::get(self).asks
+    }
+    fn bids_mut(&mut self) -> &mut Vec<OrderInternal> {
+        &mut OrdersStorage::get_mut(self).bids
+    }
+    fn asks_mut(&mut self) -> &mut Vec<OrderInternal> {
+        &mut OrdersStorage::get_mut(self).asks
+    }
+}
+
+
 #[brush::wrapper]
 pub type OrdersRef = dyn Orders;
 
@@ -47,4 +115,28 @@ pub trait Orders {
 
     // Internal function to find side and queue position of an account
     fn _queue_account_get(&self, acct: AccountId) -> Option<QueuePointer>;
+
+    fn _queue_get_mut(&mut self, side: Side) -> &mut Vec<OrderInternal>;
+    fn _queue_get(&self, side: Side) -> &Vec<OrderInternal>;
+
+    // Extrnal get command to retrieve current order for account
+    #[ink(message)]
+    fn order_get(&self, acct: AccountId) -> Option<Order>;
+
+    #[ink(message)]
+    fn order_cancel(&mut self, _acct: AccountId);
+
+    // Return length of queue
+    #[ink(message)]
+    fn queue_get_length(&self, side: Side) -> u32;
+
+    // Return size of queue
+    #[ink(message)]
+    fn queue_get_total_amount(&self, side: Side) -> Balance;
+
+    // Internal function to matches bids and asks and triggers transaction at the current price
+    fn _clear_orders_at_price(&mut self, price: Balance);
+
+    // Internal function that calls the Trade Tokens contract
+    fn _trigger_trade(base_amount: Balance, price: Balance, ask_acct: &AccountId, bid_acct: &AccountId);
 }
