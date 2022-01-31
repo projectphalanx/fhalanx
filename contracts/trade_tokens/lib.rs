@@ -1,13 +1,13 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 #![feature(min_specialization)]
 
+
 #[brush::contract]
 pub mod trade_tokens {
-    use phalanx::impls::trade_tokens::*;
-use brush::{
-        contracts::ownable::*,
-    };
+use phalanx::impls::trade_tokens::*;
+use brush::contracts::ownable::*;
 
+use ink_lang::ToAccountId;
 
     #[ink(event)]
     pub struct Transferred {
@@ -20,18 +20,27 @@ use brush::{
 
     #[ink(storage)]
     #[derive(Default, OwnableStorage)]
-    pub struct Contract {
+    pub struct TradeTokensContract {
         phalanx_tokens: PhalanxPSP22Tokens,
         #[OwnableStorageField]
         ownable: OwnableData,
     }
 
-    brush::impl_storage_trait!(PhalanxPSP22TokensStorage, Contract, phalanx_tokens, PhalanxPSP22Tokens);
+    //brush::impl_storage_trait!(PhalanxPSP22TokensStorage, TradeTokensContract, phalanx_tokens, PhalanxPSP22Tokens);
+    impl PhalanxPSP22TokensStorage for TradeTokensContract {
+        fn get(&self) -> &PhalanxPSP22Tokens {
+            &self.phalanx_tokens
+        }
 
-    impl TradePSP22Tokens for Contract {}
-    impl Ownable for Contract {}
+        fn get_mut(&mut self) -> &mut PhalanxPSP22Tokens {
+            &mut self.phalanx_tokens
+        }
+    }
 
-    impl Contract {
+    impl TradePSP22Tokens for TradeTokensContract {}
+    impl Ownable for TradeTokensContract {}
+
+    impl TradeTokensContract {
         #[ink(constructor)]
         pub fn new(base_token_account: AccountId, quoted_token_account: AccountId, phalanx_token_account: AccountId) -> Self {
             let mut instance = Self::default();

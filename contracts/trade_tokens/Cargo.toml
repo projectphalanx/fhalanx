@@ -1,14 +1,16 @@
 [package]
-name = "trade_tokens"
+name = "trade_tokens_contract"
 version = "0.1.0"
 authors = ["Phalanx"]
 edition = "2021"
 
 [lib]
-name = "trade_tokens"
+name = "trade_tokens_contract"
 path = "lib.rs"
-crate-type = ["cdylib"]
-
+crate-type = [
+    "cdylib",
+    "rlib"
+]
 [dependencies]
 ink_primitives = { tag = "v3.0.0-rc6", git = "https://github.com/paritytech/ink", default-features = false }
 ink_metadata = { tag = "v3.0.0-rc6", git = "https://github.com/paritytech/ink", default-features = false, features = ["derive"], optional = true }
