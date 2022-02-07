@@ -109,7 +109,7 @@ pub trait Orders {
     // acct can only have a single order in the queues. With the call of "order", any previous order of acct
     // is deleted
 
-    // Initial order prototype. No market pair specified. Only one queue exists.
+     // Initial order prototype. No market pair specified. Only one queue exists.
     #[ink(message)]
     fn order(&mut self, side: Side, amount: Balance) -> Result<(), PSP22Error>;
 
@@ -123,8 +123,9 @@ pub trait Orders {
     #[ink(message)]
     fn order_get(&self, acct: AccountId) -> Option<Order>;
 
+    // Caller can cancel his order
     #[ink(message)]
-    fn order_cancel(&mut self, _acct: AccountId);
+    fn order_cancel(&mut self);
 
     // Return length of queue
     #[ink(message)]

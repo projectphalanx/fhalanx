@@ -22,7 +22,6 @@ scale-info = { version = "1", default-features = false, features = ["derive"], o
 
 brush = { tag = "v1.2.0", git = "https://github.com/Supercolony-net/openbrush-contracts", default-features = false, features = ["ownable"] }
 phalanx = { path = "../..", default-features = false }
-trade_tokens_contract = { path = "../trade_tokens", default-features = false, features = ["ink-as-dependency"] }
 
 [features]
 default = ["std"]
@@ -38,7 +37,6 @@ std = [
     "scale-info/std",
     "brush/std",
     "phalanx/std",
-    "trade_tokens_contract/std",
 ]
 ink-as-dependency = []
 

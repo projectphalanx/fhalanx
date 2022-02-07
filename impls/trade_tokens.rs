@@ -1,7 +1,9 @@
 pub use crate::traits::trade_tokens::*;
 pub use crate::traits::phalanx_tokens::*;
 
+// pub use brush::modifiers;
 pub use brush::contracts::psp22::*;
+// pub use brush::contracts::ownable::*;
 use brush::{
     traits::{
         AccountId,
@@ -11,6 +13,10 @@ use brush::{
 pub use ink_prelude::vec::Vec;
 
 
+
+// Trade tokens as extrinsic is mainly for testing purpose.
+// This function is to ba called internally when a match is done.
+// As extrinsic it can only be called by the contract owner
 // TO DO
 // Authorize transfer
 // Add Fee

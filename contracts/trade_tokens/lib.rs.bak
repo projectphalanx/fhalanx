@@ -7,16 +7,15 @@ pub mod trade_tokens {
 use phalanx::impls::trade_tokens::*;
 use brush::contracts::ownable::*;
 
-use ink_lang::ToAccountId;
 
-    #[ink(event)]
-    pub struct Transferred {
-      #[ink(topic)]
-      from: Option<AccountId>,
-      #[ink(topic)]
-        to: Option<AccountId>,
-        value: Balance,
-    }
+    // #[ink(event)]
+    // pub struct Transferred {
+    //   #[ink(topic)]
+    //   from: Option<AccountId>,
+    //   #[ink(topic)]
+    //     to: Option<AccountId>,
+    //     value: Balance,
+    // }
 
     #[ink(storage)]
     #[derive(Default, OwnableStorage)]

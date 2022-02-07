@@ -13,6 +13,7 @@ pub use ink_prelude::vec::Vec;
 
 
     impl<T: OrdersStorage + OrderStorageInternal + PhalanxPSP22TokensStorage + PhalanxPSP22TokensBaseInternal> Orders for T {
+
         fn order(&mut self, side: Side, amount: Balance) -> Result<(), PSP22Error> {
         // Check Caller Account is valid?
         // If not, return an error?
@@ -51,7 +52,7 @@ pub use ink_prelude::vec::Vec;
         }
     }
 
-    fn order_cancel(&mut self, _acct: AccountId) {
+    fn order_cancel(&mut self) {
         let acct = T::env().caller();
         // Locate an existing order for this account in bids and asks queues (only 1 order per account)
         // If order found, remove it. Will be replace by a the new order (can change side)
