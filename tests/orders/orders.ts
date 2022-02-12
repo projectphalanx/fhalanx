@@ -46,8 +46,12 @@ describe('ORDERS', () => {
         await expect(fromSigner(orders.contract, alice.address).query.ordersQueueGetLength(0)).to.have.output(1)
         await expect(fromSigner(orders.contract, alice.address).query.ordersQueueGetLength(1)).to.have.output(0)
         // Check orders by account
-        // How to check a return of type Option(SomeStructure)?
-        //?? await expect(fromSigner(orders.contract, alice.address).query.ordersOrderGet(alice.address)).to.have.property('AccountId')
+        // Alice should have Some order
+        // Bob should have None order
+        console.log("Test")
+        await fromSigner(orders.contract, alice.address).query.ordersOrderGet(alice.address).then((queryOut) => console.log("Test:" + queryOut.output.toHuman()))
+        // await expect(fromSigner(orders.contract, alice.address).query.ordersOrderGet(alice.address)).to.be.isSome
+        // await expect(fromSigner(orders.contract, alice.address).query.ordersOrderGet(bob.address)).to.be.isNone
 
 
         // Bob enters a Bid Order (Side = 0) for 160 base tokens

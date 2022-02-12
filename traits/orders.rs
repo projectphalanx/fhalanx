@@ -1,4 +1,5 @@
 pub use brush::contracts::traits::psp22::*;
+pub use crate::traits::errors::*;
 use brush::{
     declare_storage_trait,
     traits::{
@@ -136,8 +137,6 @@ pub trait Orders {
     fn queue_get_total_amount(&self, side: Side) -> Balance;
 
     // Internal function to matches bids and asks and triggers transaction at the current price
-    fn _clear_orders_at_price(&mut self, price: Balance);
+    fn clear_orders_at_price(&mut self, price: Balance) -> Result<(), PhalanxError>;
 
-    // Internal function that calls the Trade Tokens contract
-    fn _trigger_trade(base_amount: Balance, price: Balance, ask_acct: &AccountId, bid_acct: &AccountId);
 }

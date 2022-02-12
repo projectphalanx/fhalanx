@@ -3,7 +3,13 @@ import { expect } from 'chai'
 import { artifacts, network, patract } from 'redspot'
 import camelCase from 'lodash/camelCase'
 import Contract from '@redspot/patract/contract'
-import {TransactionParams} from "@redspot/patract/types";
+import {TransactionParams} from "@redspot/patract/types"
+
+//?? Trying to follow this https://polkadot.js.org/docs/api/start/typescript
+// import { Header } from '@polkadot/types/interfaces'
+// import { Balance } from '@polkadot/types/interfaces';
+// type Balance2 = Balance;
+
 
 const { getContractFactory, getRandomSigner } = patract
 const { api, getSigners, getAddresses } = network

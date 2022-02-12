@@ -1,4 +1,5 @@
 pub use brush::contracts::traits::psp22::*;
+pub use crate::traits::errors::*;
 use brush::traits::{
     AccountId,
     Balance,
@@ -23,5 +24,14 @@ pub trait TradePSP22Tokens {
         ask_account: AccountId,
         base_amount: Balance,
         price: Balance,
-    ) -> Result<(), PSP22Error>;
+    ) -> Result<(), PhalanxError>;
+
+    fn _trade_tokens(
+        &mut self,
+        bid_account: AccountId,
+        ask_account: AccountId,
+        base_amount: Balance,
+        price: Balance,
+    ) -> Result<(), PhalanxError>;
+
 }
