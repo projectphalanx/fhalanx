@@ -116,6 +116,16 @@ describe('ORDERS', () => {
         await expect(fromSigner(orders.contract, alice.address).query.ordersQueueGetLength(1)).to.have.output(1)
 
 
+        // Match orders at price of 2. 
+        // Dave receives 200 base and transfers 400 quoted
+        // Alice transfers 100 base and receives 200 quoted
+        // Bob transfers 100 base and receives 200 quoted
+        await expect(fromSigner(orders.contract, alice.address).tx.ordersClearOrdersAtPrice(2)).to.eventually.be.fulfilled
+        // Check queue status
+        // Ask amount = 0
+        // Bid amount = 60
+        // Ask length = 0
+        // Bid length = 1
         // After transferring of 100 tokens the balance of Alice account should be 900
         // await expect(fromSigner(usdToken.contract, alice.address).query.psp22BalanceOf(alice.address)).to.have.output(900)
 

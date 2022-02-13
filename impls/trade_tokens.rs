@@ -71,7 +71,7 @@ pub use ink_prelude::vec::Vec;
         let ask_quoted_allowance = self.quoted().allowance(ask_account,Self::env().caller());
         
         if base_amount_to_transfer > bid_base_allowance { return Err(PhalanxError::InsufficientAllowanceForBase) };
-        if quoted_amount_to_transfer > ask_quoted_allowance { return Err(PhalanxError::InsufficientAllowanceForBase) };
+        if quoted_amount_to_transfer > ask_quoted_allowance { return Err(PhalanxError::InsufficientAllowanceForQuoted) };
 
         // This is not safe. A token swap or escrow pattern should be used? 
         self.base()

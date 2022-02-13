@@ -136,7 +136,9 @@ pub trait Orders {
     #[ink(message)]
     fn queue_get_total_amount(&self, side: Side) -> Balance;
 
-    // Internal function to matches bids and asks and triggers transaction at the current price
+    // Exgtern function to matches bids and asks and triggers transaction at the current price
+    // Should onlybe called by owner (ownable)
+    #[ink(message)]
     fn clear_orders_at_price(&mut self, price: Balance) -> Result<(), PhalanxError>;
 
 }
