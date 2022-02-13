@@ -1,5 +1,7 @@
 pub use crate::traits::orders::OrdersStorage;
 pub use crate::traits::orders::*;
+pub use crate::traits::errors::*;
+pub use crate::traits::trade_tokens::*;
 pub use crate::traits::phalanx_tokens::*;
 
 pub use brush::contracts::psp22::*;
@@ -9,12 +11,11 @@ use brush::{
         Balance,
     },
 };
-// use core::cmp;
 pub use ink_prelude::vec::Vec;
 
 
+    impl<T: OrdersStorage + OrderStorageInternal + PhalanxPSP22TokensStorage + PhalanxPSP22TokensBaseInternal + TradePSP22Tokens> Orders for T {
 
-    impl<T: OrdersStorage + OrderStorageInternal + PhalanxPSP22TokensStorage + PhalanxPSP22TokensBaseInternal> Orders for T {
         fn order(&mut self, side: Side, amount: Balance) -> Result<(), PSP22Error> {
         // Check Caller Account is valid?
         // If not, return an error?
@@ -53,7 +54,7 @@ pub use ink_prelude::vec::Vec;
         }
     }
 
-    fn order_cancel(&mut self, _acct: AccountId) {
+    fn order_cancel(&mut self) {
         let acct = T::env().caller();
         // Locate an existing order for this account in bids and asks queues (only 1 order per account)
         // If order found, remove it. Will be replace by a the new order (can change side)
@@ -102,7 +103,7 @@ pub use ink_prelude::vec::Vec;
         }
     }
 
-    fn _clear_orders_at_price(&mut self, price: Balance) {
+    fn clear_orders_at_price(&mut self, price: Balance) -> Result<(), PhalanxError> {
         // Repeat until 1 queue is empty
         //  Take 1st orders in both queues
         //  Create a transaction at price between the 2 accounts
@@ -125,12 +126,22 @@ pub use ink_prelude::vec::Vec;
                 self.asks().first().unwrap().amount,
             );
 
-            Self::_trigger_trade(
+            let result = self._trade_tokens(
+                self.bids().first().unwrap().acct,
+                self.asks().first().unwrap().acct,
                 trade_amount,
                 price,
-                &self.bids().first().unwrap().acct,
-                &self.asks().first().unwrap().acct,
-            ); // Check for success?
+            ); 
+            
+            // Check for success or error.
+            if result.is_err() {
+                // Lack of bidder or asker  allowance
+                // => Cancel bidder or asker order then loop again
+
+                // Overflow. Halve the amount to be cleared and do 2 trades?
+
+                // Transfer error. Bad, bad. 
+            }
 
             if self.bids().first().unwrap().amount == trade_amount {
                 self.bids_mut().remove(0);
@@ -143,14 +154,10 @@ pub use ink_prelude::vec::Vec;
                 self.asks_mut().first_mut().unwrap().amount -= trade_amount;
             };
         }
+
+        Ok(())
     }
 
-    fn _trigger_trade(base_amount: Balance, price: Balance, ask_acct: &AccountId, bid_acct: &AccountId) {
-        // Call the Trade Tokens contract
-        let _ba = base_amount;
-        let _p = price;
-        let _aa = ask_acct;
-        let _ba = bid_acct;
-    }
+  
 }
 

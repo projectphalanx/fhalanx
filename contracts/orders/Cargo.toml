@@ -23,7 +23,6 @@ scale-info = { version = "1", default-features = false, features = ["derive"], o
 brush = { tag = "v1.2.0", git = "https://github.com/Supercolony-net/openbrush-contracts", default-features = false, features = ["ownable"] }
 phalanx = { path = "../..", default-features = false }
 
-
 [features]
 default = ["std"]
 std = [
